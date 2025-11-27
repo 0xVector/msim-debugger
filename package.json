@@ -12,14 +12,15 @@
     "Debuggers", "Education"
   ],
   "activationEvents": [
-    "onDebug:msim"
+    "onDebug:msim",
+    "onCommand:msim-debugger.activate"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "msim-debugger.helloWorld",
-        "title": "Hello World"
+        "command": "msim-debugger.activate",
+        "title": "Activate MSIM DAP Debugger"
       }
     ],
     "breakpoints": [
