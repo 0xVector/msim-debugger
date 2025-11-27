@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "MSIM debugger",
+      "type": "mock",
+      "request": "attach",
+      "debugServer": 15000,
+      "program": "${workspaceFolder}/kernel/src/main.c"
+    }
+  ]
+}
