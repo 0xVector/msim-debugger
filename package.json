@@ -1,21 +1,37 @@
 {
   "name": "msim-debugger",
+  "publisher": "0xVector",
   "displayName": "MSIM debugger",
   "description": "MSIM emulator debugging support via DAP",
   "version": "0.0.1",
+  "repository": "https://github.com/0xVector/msim-debugger",
   "engines": {
     "vscode": "^1.105.0"
   },
   "categories": [
-    "Other"
+    "Debuggers", "Education"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onDebug:msim"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "msim-debugger.helloWorld",
         "title": "Hello World"
+      }
+    ],
+    "breakpoints": [
+      {
+        "language": "c"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "msim",
+        "label": "MSIM Debug",
+        "program": "./bin/msim-dap"
       }
     ]
   },
