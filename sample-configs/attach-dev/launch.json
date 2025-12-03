@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "MSIM debugger",
-      "type": "mock",
+      "type": "msim",
       "request": "attach",
-      "debugServer": 15000,
+      "debugServer": 10506,
       "program": "${workspaceFolder}/kernel/src/main.c"
     }
   ]

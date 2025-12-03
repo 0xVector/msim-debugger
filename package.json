@@ -9,14 +9,37 @@
     "vscode": "^1.105.0"
   },
   "categories": [
-    "Debuggers", "Education"
+    "Debuggers",
+    "Education"
   ],
   "activationEvents": [
     "onDebug:msim",
-    "onCommand:msim-debugger.activate"
+    "onDebugResolve:msim"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "debuggers": [
+      {
+        "type": "msim",
+        "label": "MSIM Debugger",
+        "languages": [
+          "c"
+        ],
+        "configurationAttributes": {
+          "attach": {
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        "initialConfigurations": [
+          {
+            "name": "MSIM debug default config",
+            "type": "msim",
+            "request": "attach"
+          }
+        ]
+      }
+    ],
     "commands": [
       {
         "command": "msim-debugger.activate",
@@ -25,14 +48,8 @@
     ],
     "breakpoints": [
       {
-        "language": "c"
-      }
-    ],
-    "debuggers": [
-      {
-        "type": "msim",
-        "label": "MSIM Debug",
-        "program": "./bin/msim-dap"
+        "language": "c",
+        "when": "debugType == msim"
       }
     ]
   },

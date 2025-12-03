@@ -4,7 +4,7 @@
     {
       "name": "MSIM debugger",
       "type": "msim",
-      "request": "launch"
+      "request": "attach"
     }
   ]
 }
