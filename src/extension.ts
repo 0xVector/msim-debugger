@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
         cwd: workspace ?? undefined
       };
 
-      return new vscode.DebugAdapterExecutable(exePath, ["-v", "-l"], options);
+      return new vscode.DebugAdapterExecutable(exePath, [], options);
     },
   };
 
