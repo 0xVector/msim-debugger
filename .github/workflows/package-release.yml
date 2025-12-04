@@ -1,0 +1,53 @@
+name: Package VS Code Extension
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  package-extension:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout extension repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Prepare bin directory
+        run: mkdir -p bin
+
+      - name: Download latest msim-dap binaries from release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download \
+          --repo "0xVector/msim-dap" \
+          --dir bin \
+          --pattern "msim-dap-linux-x64" \
+          --pattern "msim-dap-darwin-arm64"
+
+      - name: Ensure binaries are executable
+        run: |
+          chmod +x bin/msim-dap-linux-x64
+          chmod +x bin/msim-dap-darwin-arm64
+
+      - name: Install extension dependencies
+        run: npm ci
+
+      - name: Package VS Code extension
+        run: npm run package
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Latest msim-debugger
+          tag_name: latest
+          files: "*.vsix"
