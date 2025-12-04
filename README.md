@@ -5,11 +5,32 @@ Debugging extension for MSIM simulator in VS Code.
 This extension provides debugging capabilities for C programs running in the
 [MSIM](https://github.com/d-iii-s/msim) via the [Debug Adapter Protocol (DAP)](https://microsoft.github.io/debug-adapter-protocol/).
 
-## Building the Extension
+## Installation
 
 Currently, this extension is not published to the VS Code marketplace. To use it, you need to package and install it manually, which is thankfully very straightforward.
 
-The process has 4 easy steps:
+A pre-packaged version of this extension is available in the [`releases`](https://github.com/0xVector/msim-debugger/releases) page. Download the latest `msim-debugger-v*.vsix` file and install it in VS Code using the "Install from VSIX..." option in the Extensions view (in the dropdown menu in the top-right corner under `...`).
+
+The extension has the `msim-dap` binary bundled for Linux `x86` and macOS `arm64`. For these platforms, you can just install the extension and start using it.
+
+### Note for macOS
+
+Due to macOS security restrictions, you might need to manually allow the `msim-dap` binary to run the first time you use the extension.  
+To do this, try to start a debugging session. When it fails, you need to locate your VS Code extensions folder (usually in `~/.vscode/extensions/`), find the `msim-debugger` extension folder, then go to `bin/`. Then, run:
+```sh
+xattr -d com.apple.quarantine msim-dap-darwin-arm64
+```
+
+### Other Platforms
+
+If you want to try using the extension on other platforms (do note that it is untested), you can either build and package
+it yourself (see below), or use the pre-packaged extension and place a `msim-dap` binary for your platform
+in the `bin/` folder of the extension installation directory.  
+See below on how to build the binary.
+
+## Building the Extension
+
+The process of building and packaging the extension yourself has 4 easy steps:
 
 1. Obtain a `msim-dap` adapter binary for your platform.  
 This is a DAP (Debug Adapter Protocol) server binary that communicates between VS Code and the MSIM simulator written in Rust. Currently, you need to build it yourself from the
@@ -30,8 +51,6 @@ npm run package
 4. Now, take the generated [`msim-debugger-0.0.1.vsix`](msim-debugger-0.0.1.vsix) file and install it in VS Code using the "Install from VSIX..." option in the Extensions view (in the dropdown menu in the top-right corner under `...`).
 
 Done! You can now use the extension in your VS Code.
-
-Hopefully, in the future, you there will be a pre-packaged version of the extension available (or even published to the extension marketplace), so you won't have to go through this process.
 
 ## Features
 
