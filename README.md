@@ -59,7 +59,7 @@ If you already have a `launch.json`, either delete it and recreate it as above, 
 }
 ```
 
-### Breakpints
+### Breakpoints
 
 To set breakpoints, just set them in your C source files as you would with any other debugger in VS Code.  
 
