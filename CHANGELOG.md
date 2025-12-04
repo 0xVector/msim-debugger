@@ -4,6 +4,7 @@ All notable changes to the "msim-debugger" extension will be documented in this 
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [Unreleased]
+## v0.0.1
 
-- Initial release
+- Initial release of MSIM Debugger extension for VS Code
+- Supports breakpoints
