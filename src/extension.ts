@@ -1,6 +1,10 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
+import * as net from "net";
+import * as cp from "child_process";
+import * as os from "os";
+import * as crypto from "crypto";
 
 export function activate(context: vscode.ExtensionContext) {
   const activateCmd = vscode.commands.registerCommand(
@@ -11,6 +15,9 @@ export function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(activateCmd);
 
+  const outputChannel = vscode.window.createOutputChannel("msim-dap");
+  context.subscriptions.push(outputChannel);
+
   const factory: vscode.DebugAdapterDescriptorFactory = {
     createDebugAdapterDescriptor(session: vscode.DebugSession) {
       const workspace = session.workspaceFolder?.uri.fsPath;
@@ -18,11 +25,42 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showInformationMessage(`Using msim-dap binary: ${binName}`);
       const exePath = context.asAbsolutePath(path.join("bin", binName));
 
-      const options: vscode.DebugAdapterExecutableOptions = {
-        cwd: workspace ?? undefined,
-      };
+      const id = crypto.randomBytes(4).toString("hex");
+      const pipePath =
+        process.platform === "win32"
+          ? `\\\\.\\pipe\\msim-dap-${id}`
+          : path.join(os.tmpdir(), `msim-dap-${id}.sock`);
 
-      return new vscode.DebugAdapterExecutable(exePath, [], options);
+      const server = net.createServer((socket) => {
+        const proc = cp.spawn(exePath, [], {
+          cwd: workspace ?? undefined,
+          stdio: ["pipe", "pipe", "pipe"],
+        });
+
+        socket.pipe(proc.stdin);
+        proc.stdout.pipe(socket);
+
+        proc.stderr.on("data", (data: Buffer) => {
+          outputChannel.append(data.toString());
+        });
+
+        outputChannel.show(true);
+
+        proc.on("exit", (code) => {
+          outputChannel.appendLine(`\n[msim-dap exited with code ${code}]`);
+          socket.destroy();
+          server.close();
+        });
+
+        socket.on("close", () => {
+          proc.kill();
+          server.close();
+        });
+      });
+
+      server.listen(pipePath);
+
+      return new vscode.DebugAdapterNamedPipeServer(pipePath);
     },
   };
 
