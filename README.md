@@ -1,6 +1,6 @@
-# msim-debugger extension
+# MSIM debugger extension
 
-Debugging extension for MSIM simulator in VS Code.
+Debugger extension for MSIM simulator in VS Code.
 
 This extension provides debugging capabilities for C programs running in the
 [MSIM](https://github.com/d-iii-s/msim) via the [Debug Adapter Protocol (DAP)](https://microsoft.github.io/debug-adapter-protocol/).
