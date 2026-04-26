@@ -7,13 +7,15 @@ This extension provides debugging capabilities for C programs running in the
 
 ## Installation
 
-Currently, this extension is not published to the VS Code marketplace. To use it, you need to package and install it manually, which is thankfully very straightforward.
+Currently, this extension is not published to the VS Code marketplace. To use it, you need to install it manually, which is very straightforward. You have two options: using a pre-packaged version of the extension, or building and packaging it yourself.
+
+### Pre-packaged Version
 
 A pre-packaged version of this extension is available in the [`releases`](https://github.com/0xVector/msim-debugger/releases) page. Download the latest `msim-debugger-v*.vsix` file and install it in VS Code using the "Install from VSIX..." option in the Extensions view (in the dropdown menu in the top-right corner under `...`).
 
-The extension has the `msim-dap` binary bundled for Linux `x86` and macOS `arm64`. For these platforms, you can just install the extension and start using it.
+The extension has the `msim-dap` binary bundled for Linux `x86` and macOS `arm64`. For these platforms, you can just install the extension and start immediatelly using it.
 
-### Note for macOS
+#### Note for macOS
 
 Due to macOS security restrictions, you might need to manually allow the `msim-dap` binary to run the first time you use the extension.  
 To do this, try to start a debugging session. When it fails, you need to locate your VS Code extensions folder (usually in `~/.vscode/extensions/`), find the `msim-debugger` extension folder, then go to `bin/`. Then, run:
@@ -21,14 +23,15 @@ To do this, try to start a debugging session. When it fails, you need to locate 
 xattr -d com.apple.quarantine msim-dap-darwin-arm64
 ```
 
-### Other Platforms
+#### Other Platforms
 
-If you want to try using the extension on other platforms (do note that it is untested), you can either build and package
+If you want to try using the extension on other platforms (do note that it is untested and not explicitly supported), you can either build and package
 it yourself (see below), or use the pre-packaged extension and place a `msim-dap` binary for your platform
-in the `bin/` folder of the extension installation directory.  
-See below on how to build the binary.
+in the `bin/` folder of the extension installation directory.
 
-## Building the Extension
+### Packaging the Extension Manually
+
+If you want to use the extension on a platform that is not supported by the pre-packaged version or just want to build it yourself, you can do so by following the instructions below.
 
 The process of building and packaging the extension yourself has 4 easy steps:
 
@@ -37,24 +40,31 @@ This is a DAP (Debug Adapter Protocol) server binary that communicates between V
 [msim-dap repository](https://github.com/0xVector/msim-dap). Follow the instructions there.
 
 
-2. Clone this repository and copy your built `msim-dap` binary into this repository's [`bin/`](./bin/) directory.
+2. Clone this repository and copy your built `msim-dap` binary into this repository's [`bin/`](./bin/) directory.  
+Make sure it is named `msim-dap` and is executable.
 
 3. Package the extension together with the binary.  
 This is done using a Node.js tool. You need Node and npm, if you don't have it, [install it](https://nodejs.org/en/download) first.
 
-Then, run this in the root of this repository to install the VS Code packaging tool and run it:
+Then, run this in the root of this repository:
 ```sh
 npm install
 npm run package
 ```
+It will install the VS Code packaging tool and package the extension.
 
 4. Now, take the generated [`msim-debugger-0.0.1.vsix`](msim-debugger-0.0.1.vsix) file and install it in VS Code using the "Install from VSIX..." option in the Extensions view (in the dropdown menu in the top-right corner under `...`).
 
 Done! You can now use the extension in your VS Code.
 
+## Updating the Extension
+
+The extension doesn't have an auto-update mechanism, so you need to repeat the installation process. You might need to **Reload Window** in VS Code command palette after installing the new version.
+
 ## Features
 
-- breakpoints: you can set breakpoints in C source files and MSIM will stop the execution when it hits them
+- breakpoints: you can set breakpoints in C source files and MSIM will stop the execution and show you the current line when it hits a breakpoint
+- continue / pause: you can continue the execution until the next breakpoint or pause it at any time
 
 ## Usage
 
@@ -70,47 +80,36 @@ If you already have a `launch.json`, either delete it and recreate it as above, 
   "version": "0.2.0",
   "configurations": [
     {
-        "name": "MSIM debug default config",
-        "type": "msim",
-        "request": "attach"
+      "name": "MSIM debug default config",
+      "type": "msim",
+      "request": "attach",
+      "msimPath": "msim", // Path to the MSIM binary, defaults to 'msim' (resolved from PATH).
+      "port": 10505 // Port to connect to the MSIM DAP server, defaults to 10505.
     }
   ]
 }
 ```
 
-### Breakpoints
+### Starting MSIM and Debugging
 
-To set breakpoints, just set them in your C source files as you would with any other debugger in VS Code.  
-
-Then, start MSIM.  
-**Important:** make sure to start MSIM with the `-d` flag to enable the DAP server:
+Then, start MSIM. If you don't start MSIM yourself, the extension will start it for you.  
+**Important:** if you're starting MSIM yourself, make sure to use the `-d` flag to enable the DAP server:
 ```sh
 msim -d
 ```
+Also note that when using a custom port in `launch.json` config, you need to specify the same port when starting MSIM: `msim -d<port>`. See `msim -h` for more details.
 
 MSIM will wait for VS Code to connect to it. You can start debugging in VS Code by selecting the "MSIM debug default config" configuration and clicking the green debug button.
 
-MSIM will enter interactive mode upon hitting a breakpoint, just as it would if you set it inside the
-interactive mode. You can then, for example, examine the registers with `cpu0 rd` or step through
-to the next breakpoint with `continue`.
+### Breakpoints
 
-## Tips
+To set breakpoints, just set them in your C source files as you would with any other debugger in VS Code.
 
-When you start debugging, VS Code by default opens the Debug Console. This is useless as you will most likely
-have the MSIM simulator open in the terminal and want to see it while debugging, which means you have to click
-back to the terminal.  
-To disable this annoying behavior, change the **Debug: Internal Console Options** setting (`debug.internalConsoleOptions`) for the workspace.
-
-You can also manually add this to your workspace `.vscode/settings.json`:
-```js
-{
-"debug.internalConsoleOptions": "neverOpen"
-}
-```
+MSIM will stop the execution and show you the current line when it hits a breakpoint. You can then continue the execution using the standard debug controls in VS Code.
 
 ## Known Issues
 
-The extension will not stop the debug session after MSIM exits automatically, you need to click the disconnect/stop button manually.
+- 
 
 ## Release Notes
 
