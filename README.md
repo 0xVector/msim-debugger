@@ -84,7 +84,8 @@ If you already have a `launch.json`, either delete it and recreate it as above, 
       "type": "msim",
       "request": "attach",
       "msimPath": "msim", // Path to the MSIM binary, defaults to 'msim' (resolved from PATH).
-      "port": 10505 // Port to connect to the MSIM DAP server, defaults to 10505.
+      "port": 10505, // Port to connect to the MSIM DAP server, defaults to 10505.
+      "kernelPath": "./kernel/kernel.raw" // Path to the kernel.raw file (or other ELF file) to debug.
     }
   ]
 }
@@ -92,7 +93,7 @@ If you already have a `launch.json`, either delete it and recreate it as above, 
 
 ### Starting MSIM and Debugging
 
-Then, start MSIM. If you don't start MSIM yourself, the extension will start it for you.  
+Then, start MSIM. If you don't start MSIM yourself, the extension will start it for you with the correct arguments.  
 **Important:** if you're starting MSIM yourself, make sure to use the `-d` flag to enable the DAP server:
 ```sh
 msim -d

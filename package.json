@@ -38,6 +38,11 @@
                 "type": "number",
                 "description": "Port MSIM listens on for DAP connections.",
                 "default": 10505
+              },
+              "kernelPath": {
+                "type": "string",
+                "description": "Path to the kernel.raw file (or other ELF file) to debug. Relative paths are resolved from the workspace root. Defaults to './kernel/kernel.raw'.",
+                "default": "./kernel/kernel.raw"
               }
             },
             "additionalProperties": false
@@ -49,7 +54,8 @@
             "type": "msim",
             "request": "attach",
             "msimPath": "msim",
-            "port": 10505
+            "port": 10505,
+            "kernelPath": "./kernel/kernel.raw"
           }
         ]
       }

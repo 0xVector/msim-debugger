@@ -9,6 +9,7 @@ import * as crypto from "crypto";
 const MSIM_DEFAULT_PORT = 10505;
 const MSIM_DEFAULT_PATH = "msim";
 const MSIM_TERM_NAME = "MSIM";
+const KERNEL_DEFAULT_PATH = "./kernel/kernel.raw";
 const OUTPUT_CHANNEL_NAME = "msim-dap";
 const OUTPUT_EXT_LOG_PREFIX = "[Extension]";
 const OUTPUT_DAP_LOG_PREFIX = "[msim-dap] ";
@@ -68,10 +69,13 @@ export function activate(context: vscode.ExtensionContext) {
         }
       }
 
+      const kernelPath: string = session.configuration.kernelPath ?? KERNEL_DEFAULT_PATH;
+
       // Wire up the debug adapter server process
       const server = net.createServer((socket) => {
         const adapterArgs = [];
         if (port !== MSIM_DEFAULT_PORT) adapterArgs.push(`-m=${port}`);
+        if (kernelPath !== KERNEL_DEFAULT_PATH) adapterArgs.push(`-p=${kernelPath}`);
 
         // Spawn msim-dap with the workspace as cwd
         const proc = cp.spawn(exePath, adapterArgs, {
