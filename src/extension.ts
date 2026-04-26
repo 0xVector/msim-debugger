@@ -6,6 +6,13 @@ import * as cp from "child_process";
 import * as os from "os";
 import * as crypto from "crypto";
 
+const MSIM_DEFAULT_PORT = 10505;
+const MSIM_DEFAULT_PATH = "msim";
+const MSIM_TERM_NAME = "MSIM";
+const OUTPUT_CHANNEL_NAME = "msim-dap";
+const OUTPUT_EXT_LOG_PREFIX = "[Extension]";
+const OUTPUT_DAP_LOG_PREFIX = "[msim-dap] ";
+
 export function activate(context: vscode.ExtensionContext) {
   const activateCmd = vscode.commands.registerCommand(
     "msim-debugger.activate",
@@ -22,7 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
     createDebugAdapterDescriptor(session: vscode.DebugSession) {
       const workspace = session.workspaceFolder?.uri.fsPath;
       const binName = resolveBinName(context);
-      vscode.window.showInformationMessage(`Using msim-dap binary: ${binName}`);
+      logOutput(`Using msim-dap binary: ${binName}`);
       const exePath = context.asAbsolutePath(path.join("bin", binName));
 
       const id = crypto.randomBytes(4).toString("hex");
@@ -36,6 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
           cwd: workspace ?? undefined,
           stdio: ["pipe", "pipe", "pipe"],
         });
+        logOutput(`Spawned msim-dap as: \`${exePath} ${adapterArgs.join(" ")}\``);
 
         socket.pipe(proc.stdin);
         proc.stdout.pipe(socket);
@@ -68,7 +76,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.debug.registerDebugAdapterDescriptorFactory("msim", factory)
   );
 
-  console.log("msim-debugger activated!");
+  // Log to the output channel (where msim-dap stderr is normally logged)
+  function logOutput(log: string) {
+    outputChannel.appendLine(`${OUTPUT_EXT_LOG_PREFIX} ${log}`);
+  }
 }
 
 export function deactivate() {}
