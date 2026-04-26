@@ -2,9 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "MSIM debugger",
+      "name": "MSIM debug default config",
       "type": "msim",
-      "request": "attach"
+      "request": "attach",
+      "msimPath": "msim",
+      "port": 10505
     }
   ]
 }

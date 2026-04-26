@@ -28,7 +28,18 @@
         ],
         "configurationAttributes": {
           "attach": {
-            "properties": {},
+            "properties": {
+              "msimPath": {
+                "type": "string",
+                "description": "Path to the MSIM binary. Defaults to 'msim' (resolved from PATH).",
+                "default": "msim"
+              },
+              "port": {
+                "type": "number",
+                "description": "Port MSIM listens on for DAP connections.",
+                "default": 10505
+              }
+            },
             "additionalProperties": false
           }
         },
@@ -36,7 +47,9 @@
           {
             "name": "MSIM debug default config",
             "type": "msim",
-            "request": "attach"
+            "request": "attach",
+            "msimPath": "msim",
+            "port": 10505
           }
         ]
       }

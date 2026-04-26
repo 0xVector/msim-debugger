@@ -41,7 +41,33 @@ export function activate(context: vscode.ExtensionContext) {
           ? `\\\\.\\pipe\\msim-dap-${id}`
           : path.join(os.tmpdir(), `msim-dap-${id}.sock`);
 
+      // Check if msim running and try to start it if not
       const port: number = session.configuration.port ?? MSIM_DEFAULT_PORT;
+
+      if (!probeMsim(port)) {
+        const msimPath: string = session.configuration.msimPath ?? MSIM_DEFAULT_PATH;
+        if (!validateMsimPath(msimPath)) {
+          vscode.window.showErrorMessage(
+            "MSIM is not running and not found in PATH."
+          );
+          logOutput(`MSIM not running, also not found at path: ${msimPath}. Please start MSIM or provide a valid \`msimPath\` in the debug configuration.`);
+          throw new Error("MSIM not running");
+        }
+
+        const existing = vscode.window.terminals.find(t => t.name === MSIM_TERM_NAME);
+        const term = existing ?? vscode.window.createTerminal(MSIM_TERM_NAME);
+        const portArg = port !== MSIM_DEFAULT_PORT ? `${port}` : "";
+        term.sendText(`${msimPath} -d${portArg}`);
+        term.show(true);
+
+        // Wait for msim to start listening
+        const ready = await waitForMsim(port, 1000);
+        if (!ready) {
+          vscode.window.showErrorMessage("Timed out waiting for MSIM to start.");
+          throw new Error("MSIM start timeout");
+        }
+      }
+
       // Wire up the debug adapter server process
       const server = net.createServer((socket) => {
         const adapterArgs = [];
@@ -94,6 +120,33 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {}
+
+function probeMsim(port: number): boolean {
+  try {
+    cp.execSync(`ss -tln | grep -q ':${port}'`, { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function waitForMsim(port: number, timeoutMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (probeMsim(port)) { return true; }
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  return false;
+}
+
+function validateMsimPath(msimPath: string): boolean {                                                                                       
+    try {                                                                                                                                    
+      cp.execSync(`which ${msimPath}`, { stdio: "ignore" });
+      return true;                                                                                                                           
+    } catch {                                                                                                                              
+      return false;
+    }
+}
 
 function resolveAdapterBinName(context: vscode.ExtensionContext): string {
   const platform = process.platform;
