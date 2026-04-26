@@ -22,24 +22,33 @@ export function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(activateCmd);
 
-  const outputChannel = vscode.window.createOutputChannel("msim-dap");
+  // Output channel for msim-dap stderr logs
+  const outputChannel = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
   context.subscriptions.push(outputChannel);
 
   const factory: vscode.DebugAdapterDescriptorFactory = {
-    createDebugAdapterDescriptor(session: vscode.DebugSession) {
+    async createDebugAdapterDescriptor(session: vscode.DebugSession) {
+      // Resolve msim-dap binary path
       const workspace = session.workspaceFolder?.uri.fsPath;
-      const binName = resolveBinName(context);
+      const binName = resolveAdapterBinName(context);
       logOutput(`Using msim-dap binary: ${binName}`);
       const exePath = context.asAbsolutePath(path.join("bin", binName));
 
+      // Setup unique pipe
       const id = crypto.randomBytes(4).toString("hex");
       const pipePath =
         process.platform === "win32"
           ? `\\\\.\\pipe\\msim-dap-${id}`
           : path.join(os.tmpdir(), `msim-dap-${id}.sock`);
 
+      const port: number = session.configuration.port ?? MSIM_DEFAULT_PORT;
+      // Wire up the debug adapter server process
       const server = net.createServer((socket) => {
-        const proc = cp.spawn(exePath, [], {
+        const adapterArgs = [];
+        if (port !== MSIM_DEFAULT_PORT) adapterArgs.push(`-m=${port}`);
+
+        // Spawn msim-dap with the workspace as cwd
+        const proc = cp.spawn(exePath, adapterArgs, {
           cwd: workspace ?? undefined,
           stdio: ["pipe", "pipe", "pipe"],
         });
@@ -48,12 +57,14 @@ export function activate(context: vscode.ExtensionContext) {
         socket.pipe(proc.stdin);
         proc.stdout.pipe(socket);
 
+        // Log msim-dap stderr to the output channel
         proc.stderr.on("data", (data: Buffer) => {
-          outputChannel.append(data.toString());
+          data.toString().split("\n").forEach((line: string) => {
+            if (line) outputChannel.append(`${OUTPUT_DAP_LOG_PREFIX} ${line.trimEnd()}\n`);
+          });
         });
 
-        outputChannel.show(true);
-
+        // Clean up on exit
         proc.on("exit", (code) => {
           outputChannel.appendLine(`\n[msim-dap exited with code ${code}]`);
           socket.destroy();
@@ -84,7 +95,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {}
 
-function resolveBinName(context: vscode.ExtensionContext) {
+function resolveAdapterBinName(context: vscode.ExtensionContext): string {
   const platform = process.platform;
   const arch = process.arch;
   const binName = `msim-dap-${platform}-${arch}`;
