@@ -69,11 +69,12 @@ export function activate(context: vscode.ExtensionContext) {
         // Wait for msim to start listening
         const ready = await waitForMsim(port, 1000);
         if (!ready) {
-          vscode.window.showErrorMessage(
-            "Timed out waiting for MSIM to start.",
+          logOutput(
+            `!!! Probe timed out waiting for MSIM on port ${port} — proceeding anyway as last attempt.
+            If this fails, MSIM may not have started correctly.`,
           );
-          throw new Error("MSIM start timeout");
         }
+        term.show(true);
       }
 
       const kernelPath: string =
