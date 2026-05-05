@@ -114,7 +114,14 @@ export function activate(context: vscode.ExtensionContext) {
 
         // Clean up on exit
         proc.on("exit", (code) => {
-          outputChannel.appendLine(`\n[msim-dap exited with code ${code}]`);
+          outputChannel.appendLine(
+            `\n[msim-dap exited with exit code ${code}]`,
+          );
+          if (code !== null && code !== 0) {
+            vscode.window.showErrorMessage(
+              `msim-dap exited with exit code ${code}!`,
+            );
+          }
           socket.destroy();
           server.close();
         });
