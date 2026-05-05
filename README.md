@@ -108,6 +108,20 @@ To set breakpoints, just set them in your C source files as you would with any o
 
 MSIM will stop the execution and show you the current line when it hits a breakpoint. You can then continue the execution using the standard debug controls in VS Code.
 
+## Tips
+
+When you start debugging, VS Code by default opens the Debug Console. This is useless as you will most likely
+have the MSIM simulator open in the terminal and want to see it while debugging, which means you have to click
+back to the terminal.  
+To disable this annoying behavior, change the **Debug: Internal Console Options** setting (`debug.internalConsoleOptions`) for the workspace.
+
+You can also manually add this to your workspace `.vscode/settings.json`:
+```js
+{
+"debug.internalConsoleOptions": "neverOpen"
+}
+```
+
 ## Known Issues
 
 - 
