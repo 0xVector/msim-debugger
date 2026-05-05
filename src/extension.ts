@@ -97,7 +97,7 @@ export function activate(context: vscode.ExtensionContext) {
                 outputChannel.append(
                   `${OUTPUT_DAP_LOG_PREFIX} ${line.trimEnd()}\n`,
                 );
-          });
+            });
         });
 
         // Clean up on exit
@@ -133,7 +133,12 @@ export function deactivate() {}
 
 function probeMsim(port: number): boolean {
   try {
-    cp.execSync(`ss -tln | grep -q ':${port}'`, { stdio: "ignore" });
+    // netstat -an works on both macOS and Linux without.
+    // macOS output uses a dot before port: "*.10505  ...LISTEN"
+    // Linux output uses a colon:           "0.0.0.0:10505 ...LISTEN"
+    cp.execSync(`netstat -an | grep -qE '[.:]${port}[[:space:]].*LISTEN'`, {
+      stdio: "ignore",
+    });
     return true;
   } catch {
     return false;
@@ -151,13 +156,13 @@ async function waitForMsim(port: number, timeoutMs: number): Promise<boolean> {
   return false;
 }
 
-function validateMsimPath(msimPath: string): boolean {                                                                                       
-    try {                                                                                                                                    
-      cp.execSync(`which ${msimPath}`, { stdio: "ignore" });
-      return true;                                                                                                                           
-    } catch {                                                                                                                              
-      return false;
-    }
+function validateMsimPath(msimPath: string): boolean {
+  try {
+    cp.execSync(`which ${msimPath}`, { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function resolveAdapterBinName(context: vscode.ExtensionContext): string {
