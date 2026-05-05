@@ -89,8 +89,14 @@ export function activate(context: vscode.ExtensionContext) {
 
         // Log msim-dap stderr to the output channel
         proc.stderr.on("data", (data: Buffer) => {
-          data.toString().split("\n").forEach((line: string) => {
-            if (line) outputChannel.append(`${OUTPUT_DAP_LOG_PREFIX} ${line.trimEnd()}\n`);
+          data
+            .toString()
+            .split("\n")
+            .forEach((line: string) => {
+              if (line)
+                outputChannel.append(
+                  `${OUTPUT_DAP_LOG_PREFIX} ${line.trimEnd()}\n`,
+                );
           });
         });
 
@@ -114,7 +120,7 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   context.subscriptions.push(
-    vscode.debug.registerDebugAdapterDescriptorFactory("msim", factory)
+    vscode.debug.registerDebugAdapterDescriptorFactory("msim", factory),
   );
 
   // Log to the output channel (where msim-dap stderr is normally logged)
@@ -137,7 +143,9 @@ function probeMsim(port: number): boolean {
 async function waitForMsim(port: number, timeoutMs: number): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    if (probeMsim(port)) { return true; }
+    if (probeMsim(port)) {
+      return true;
+    }
     await new Promise((r) => setTimeout(r, 300));
   }
   return false;
@@ -169,7 +177,7 @@ function resolveAdapterBinName(context: vscode.ExtensionContext): string {
   }
 
   vscode.window.showErrorMessage(
-    `Unsupported platform or architecture: ${platform}-${arch}`
+    `Unsupported platform or architecture: ${platform}-${arch}`,
   );
   throw new Error(`Unsupported platform or architecture: ${platform}-${arch}`);
 }
