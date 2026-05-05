@@ -13,6 +13,7 @@ const KERNEL_DEFAULT_PATH = "./kernel/kernel.raw";
 const OUTPUT_CHANNEL_NAME = "msim-dap";
 const OUTPUT_EXT_LOG_PREFIX = "[Extension]";
 const OUTPUT_DAP_LOG_PREFIX = "[msim-dap] ";
+const KERNEL_NAME = "kernel.raw";
 
 export function activate(context: vscode.ExtensionContext) {
   const activateCmd = vscode.commands.registerCommand(
@@ -29,8 +30,24 @@ export function activate(context: vscode.ExtensionContext) {
 
   const factory: vscode.DebugAdapterDescriptorFactory = {
     async createDebugAdapterDescriptor(session: vscode.DebugSession) {
-      // Resolve msim-dap binary path
       const workspace = session.workspaceFolder?.uri.fsPath;
+
+      // Resolve kernel path from configuration and fail early if it doesn't exist
+      const kernelPath: string =
+        session.configuration.kernelPath ?? KERNEL_DEFAULT_PATH;
+      const resolvedKernelPath =
+        workspace && !path.isAbsolute(kernelPath)
+          ? path.resolve(workspace, kernelPath)
+          : kernelPath;
+      if (!fs.existsSync(resolvedKernelPath)) {
+        vscode.window.showErrorMessage(
+          `${KERNEL_NAME} file not found: ${resolvedKernelPath}`,
+        );
+        logOutput(`${KERNEL_NAME} file not found: ${resolvedKernelPath}`);
+        throw new Error(`${KERNEL_NAME} file not found`);
+      }
+
+      // Resolve msim-dap binary path
       const binName = resolveAdapterBinName(context);
       logOutput(`Using msim-dap binary: ${binName}`);
       const exePath = context.asAbsolutePath(path.join("bin", binName));
@@ -77,15 +94,12 @@ export function activate(context: vscode.ExtensionContext) {
         term.show(true);
       }
 
-      const kernelPath: string =
-        session.configuration.kernelPath ?? KERNEL_DEFAULT_PATH;
-
       // Wire up the debug adapter server process
       const server = net.createServer((socket) => {
         const adapterArgs = [];
         if (port !== MSIM_DEFAULT_PORT) adapterArgs.push(`-m=${port}`);
         if (kernelPath !== KERNEL_DEFAULT_PATH)
-          adapterArgs.push(`-p=${kernelPath}`);
+          adapterArgs.push(`-p=${resolvedKernelPath}`);
 
         // Spawn msim-dap with the workspace as cwd
         const proc = cp.spawn(exePath, adapterArgs, {
