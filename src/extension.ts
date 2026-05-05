@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
     "msim-debugger.activate",
     () => {
       vscode.window.showInformationMessage("Activated MSIM debugger!");
-    }
+    },
   );
   context.subscriptions.push(activateCmd);
 
@@ -46,16 +46,21 @@ export function activate(context: vscode.ExtensionContext) {
       const port: number = session.configuration.port ?? MSIM_DEFAULT_PORT;
 
       if (!probeMsim(port)) {
-        const msimPath: string = session.configuration.msimPath ?? MSIM_DEFAULT_PATH;
+        const msimPath: string =
+          session.configuration.msimPath ?? MSIM_DEFAULT_PATH;
         if (!validateMsimPath(msimPath)) {
           vscode.window.showErrorMessage(
-            "MSIM is not running and not found in PATH."
+            "MSIM is not running and not found in PATH.",
           );
-          logOutput(`MSIM not running, also not found at path: ${msimPath}. Please start MSIM or provide a valid \`msimPath\` in the debug configuration.`);
+          logOutput(
+            `MSIM not running, also not found at path: ${msimPath}. Please start MSIM or provide a valid \`msimPath\` in the debug configuration.`,
+          );
           throw new Error("MSIM not running");
         }
 
-        const existing = vscode.window.terminals.find(t => t.name === MSIM_TERM_NAME);
+        const existing = vscode.window.terminals.find(
+          (t) => t.name === MSIM_TERM_NAME,
+        );
         const term = existing ?? vscode.window.createTerminal(MSIM_TERM_NAME);
         const portArg = port !== MSIM_DEFAULT_PORT ? `${port}` : "";
         term.sendText(`${msimPath} -d${portArg}`);
@@ -64,25 +69,31 @@ export function activate(context: vscode.ExtensionContext) {
         // Wait for msim to start listening
         const ready = await waitForMsim(port, 1000);
         if (!ready) {
-          vscode.window.showErrorMessage("Timed out waiting for MSIM to start.");
+          vscode.window.showErrorMessage(
+            "Timed out waiting for MSIM to start.",
+          );
           throw new Error("MSIM start timeout");
         }
       }
 
-      const kernelPath: string = session.configuration.kernelPath ?? KERNEL_DEFAULT_PATH;
+      const kernelPath: string =
+        session.configuration.kernelPath ?? KERNEL_DEFAULT_PATH;
 
       // Wire up the debug adapter server process
       const server = net.createServer((socket) => {
         const adapterArgs = [];
         if (port !== MSIM_DEFAULT_PORT) adapterArgs.push(`-m=${port}`);
-        if (kernelPath !== KERNEL_DEFAULT_PATH) adapterArgs.push(`-p=${kernelPath}`);
+        if (kernelPath !== KERNEL_DEFAULT_PATH)
+          adapterArgs.push(`-p=${kernelPath}`);
 
         // Spawn msim-dap with the workspace as cwd
         const proc = cp.spawn(exePath, adapterArgs, {
           cwd: workspace ?? undefined,
           stdio: ["pipe", "pipe", "pipe"],
         });
-        logOutput(`Spawned msim-dap as: \`${exePath} ${adapterArgs.join(" ")}\``);
+        logOutput(
+          `Spawned msim-dap as: \`${exePath} ${adapterArgs.join(" ")}\``,
+        );
 
         socket.pipe(proc.stdin);
         proc.stdout.pipe(socket);
@@ -113,7 +124,7 @@ export function activate(context: vscode.ExtensionContext) {
         });
       });
 
-      server.listen(pipePath);
+      await new Promise<void>((resolve) => server.listen(pipePath, resolve));
 
       return new vscode.DebugAdapterNamedPipeServer(pipePath);
     },
@@ -127,62 +138,81 @@ export function activate(context: vscode.ExtensionContext) {
   function logOutput(log: string) {
     outputChannel.appendLine(`${OUTPUT_EXT_LOG_PREFIX} ${log}`);
   }
+
+  function probeMsim(port: number): boolean {
+    // Linux: check /proc/net/tcp for a listener on the port
+    try {
+      const hexPort = port.toString(16).toUpperCase().padStart(4, "0");
+      const lines = fs.readFileSync("/proc/net/tcp", "utf8").split("\n");
+      // Column 1: local_address, ends with :hexPort
+      // Column 3: state, "0A" = LISTEN
+      if (
+        lines.some((l) => {
+          const columns = l.trim().split(/\s+/);
+          return columns[1].endsWith(`:${hexPort}`) && columns[3] === "0A";
+        })
+      ) {
+        return true;
+      }
+    } catch {}
+
+    // macOS fallback: netstat should be most reliable
+    try {
+      cp.execSync(`netstat -an | grep -qE '[.:]${port}[[:space:]].*LISTEN'`, {
+        stdio: "ignore",
+      });
+      return true;
+    } catch {}
+
+    return false;
+  }
+
+  async function waitForMsim(
+    port: number,
+    timeoutMs: number,
+  ): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (probeMsim(port)) {
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    return false;
+  }
+
+  function validateMsimPath(msimPath: string): boolean {
+    try {
+      cp.execSync(`which ${msimPath}`, { stdio: "ignore" });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function resolveAdapterBinName(context: vscode.ExtensionContext): string {
+    const platform = process.platform;
+    const arch = process.arch;
+    const binName = `msim-dap-${platform}-${arch}`;
+
+    if (["msim-dap-linux-x64", "msim-dap-darwin-arm64"].includes(binName)) {
+      if (fs.existsSync(context.asAbsolutePath(path.join("bin", binName)))) {
+        return binName;
+      }
+    }
+
+    const fallbackBin = "msim-dap";
+    if (fs.existsSync(context.asAbsolutePath(path.join("bin", fallbackBin)))) {
+      return fallbackBin;
+    }
+
+    vscode.window.showErrorMessage(
+      `Unsupported platform or architecture: ${platform}-${arch}`,
+    );
+    throw new Error(
+      `Unsupported platform or architecture: ${platform}-${arch}`,
+    );
+  }
 }
 
 export function deactivate() {}
-
-function probeMsim(port: number): boolean {
-  try {
-    // netstat -an works on both macOS and Linux without.
-    // macOS output uses a dot before port: "*.10505  ...LISTEN"
-    // Linux output uses a colon:           "0.0.0.0:10505 ...LISTEN"
-    cp.execSync(`netstat -an | grep -qE '[.:]${port}[[:space:]].*LISTEN'`, {
-      stdio: "ignore",
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function waitForMsim(port: number, timeoutMs: number): Promise<boolean> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (probeMsim(port)) {
-      return true;
-    }
-    await new Promise((r) => setTimeout(r, 300));
-  }
-  return false;
-}
-
-function validateMsimPath(msimPath: string): boolean {
-  try {
-    cp.execSync(`which ${msimPath}`, { stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function resolveAdapterBinName(context: vscode.ExtensionContext): string {
-  const platform = process.platform;
-  const arch = process.arch;
-  const binName = `msim-dap-${platform}-${arch}`;
-
-  if (["msim-dap-linux-x64", "msim-dap-darwin-arm64"].includes(binName)) {
-    if (fs.existsSync(context.asAbsolutePath(path.join("bin", binName)))) {
-      return binName;
-    }
-  }
-
-  const fallbackBin = "msim-dap";
-  if (fs.existsSync(context.asAbsolutePath(path.join("bin", fallbackBin)))) {
-    return fallbackBin;
-  }
-
-  vscode.window.showErrorMessage(
-    `Unsupported platform or architecture: ${platform}-${arch}`,
-  );
-  throw new Error(`Unsupported platform or architecture: ${platform}-${arch}`);
-}
